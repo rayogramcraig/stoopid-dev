@@ -1429,7 +1429,7 @@ button {
   margin: 0 0 10px;
   font-size: 32px;
   line-height: 1.02;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.05em;
 }
 
@@ -1578,11 +1578,13 @@ button {
   }
 
   .smart-sheet__panel {
-    width: calc(100vw - 70px);
-    max-height: calc(100vh - 220px);
-    padding: 18px 18px 20px;
-    border-radius: 26px;
-  }
+        width: calc(100vw - 70px);
+        max-height: calc(100vh - 140px);
+        padding: 18px 18px 20px;
+        border-radius: 26px;
+        position: absolute;
+        top: 50px;
+    }
 
   .smart-sheet__search-input {
     font-size: 24px;
@@ -1620,9 +1622,9 @@ button {
   }
 
   .color-lightness-row {
-    gap: 12px;
-    margin-bottom: 16px;
-  }
+        gap: 12px;
+        margin-bottom: 46px;
+    }
 
   .color-preview-swatch {
     width: 34px;
