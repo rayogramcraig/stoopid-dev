@@ -122,26 +122,6 @@
           </div>
         </div>
 
-<div id="ai-suggestions" class="ai-suggestions" hidden>
-  <div class="ai-suggestions__header">AI suggestions</div>
-  <div id="ai-status" class="ai-status"></div>
-
-  <div class="ai-group">
-    <div class="ai-group__label">object</div>
-    <div id="ai-object-suggestions" class="ai-pill-row"></div>
-  </div>
-
-  <div class="ai-group">
-    <div class="ai-group__label">color</div>
-    <div id="ai-color-suggestion" class="ai-color-line"></div>
-  </div>
-
-  <div class="ai-group">
-    <div class="ai-group__label">material</div>
-    <div id="ai-material-suggestions" class="ai-pill-row"></div>
-  </div>
-</div>
-
 
         <div class="add-status" id="form-status"></div>
 
@@ -160,6 +140,57 @@
           <input id="lng" name="lng" type="text" readonly />
           <input id="photo" name="photo" type="file" accept="image/*" capture="environment" />
         </form>
+      </section>
+
+
+      <section id="object-sheet" class="smart-sheet smart-sheet--object" hidden>
+        <div class="smart-sheet__panel">
+          <div class="smart-sheet__search-wrap">
+            <input id="object-search-input" class="smart-sheet__search-input" type="text" autocomplete="off" spellcheck="false" placeholder="choose or type here" />
+          </div>
+
+          <div id="object-ai-wrap" class="smart-sheet__ai-wrap" hidden>
+            <div class="smart-sheet__ai-label">🤖 AI suggestions:</div>
+            <div id="object-ai-suggestions" class="smart-sheet__suggestions"></div>
+          </div>
+
+          <div id="object-options" class="smart-sheet__options"></div>
+        </div>
+      </section>
+
+      <section id="color-sheet" class="smart-sheet smart-sheet--color" hidden>
+        <div class="smart-sheet__panel smart-sheet__panel--color">
+          <div class="smart-sheet__title">What color is it?</div>
+          <div id="color-ai-wrap" class="smart-sheet__ai-inline" hidden>
+            <div class="smart-sheet__ai-label">🤖 AI suggestion:</div>
+            <button id="color-ai-apply" class="smart-chip smart-chip--inline" type="button"></button>
+          </div>
+
+          <div id="color-wheel" class="color-wheel" role="slider" aria-label="Choose color" tabindex="0">
+            <div id="color-wheel-knob" class="color-wheel__knob"></div>
+          </div>
+
+          <div class="color-lightness-row">
+            <div id="color-preview-swatch" class="color-preview-swatch"></div>
+            <input id="color-lightness" class="color-lightness" type="range" min="22" max="92" step="1" value="62" />
+          </div>
+
+          <div class="smart-sheet__title smart-sheet__title--secondary">What material is it made of?</div>
+          <div class="smart-sheet__search-wrap smart-sheet__search-wrap--secondary">
+            <input id="material-search-input" class="smart-sheet__search-input" type="text" autocomplete="off" spellcheck="false" placeholder="choose or type here" />
+          </div>
+
+          <div id="material-ai-wrap" class="smart-sheet__ai-wrap" hidden>
+            <div class="smart-sheet__ai-label">🤖 AI suggestions:</div>
+            <div id="material-ai-suggestions" class="smart-sheet__suggestions"></div>
+          </div>
+
+          <div id="material-options" class="smart-sheet__options smart-sheet__options--materials"></div>
+
+          <div class="smart-sheet__actions">
+            <button id="color-sheet-done-btn" class="smart-sheet__done-btn" type="button">done</button>
+          </div>
+        </div>
       </section>
 
       <section id="picker-sheet" class="picker-sheet" hidden>

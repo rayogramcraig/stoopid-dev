@@ -43,6 +43,25 @@ const pickerSearchWrap = document.getElementById('picker-search-wrap');
 const pickerSearchInput = document.getElementById('picker-search-input');
 const pickerOptions = document.getElementById('picker-options');
 
+const objectSheet = document.getElementById('object-sheet');
+const objectSearchInput = document.getElementById('object-search-input');
+const objectAiWrap = document.getElementById('object-ai-wrap');
+const objectAiSuggestions = document.getElementById('object-ai-suggestions');
+const objectOptions = document.getElementById('object-options');
+
+const colorSheet = document.getElementById('color-sheet');
+const colorWheel = document.getElementById('color-wheel');
+const colorWheelKnob = document.getElementById('color-wheel-knob');
+const colorLightness = document.getElementById('color-lightness');
+const colorPreviewSwatch = document.getElementById('color-preview-swatch');
+const colorAiWrap = document.getElementById('color-ai-wrap');
+const colorAiApply = document.getElementById('color-ai-apply');
+const materialAiWrap = document.getElementById('material-ai-wrap');
+const materialAiSuggestions = document.getElementById('material-ai-suggestions');
+const materialSearchInput = document.getElementById('material-search-input');
+const materialOptions = document.getElementById('material-options');
+const colorSheetDoneBtn = document.getElementById('color-sheet-done-btn');
+
 const mapSearchInput = document.getElementById('map-search');
 const filterAllBtn = document.getElementById('filter-all-btn');
 const filterNewBtn = document.getElementById('filter-new-btn');
@@ -65,12 +84,6 @@ const detailHeroState = document.getElementById('detail-hero-state');
 const detailHeroStateText = document.getElementById('detail-hero-state-text');
 const detailHeroStillBtn = document.getElementById('detail-hero-still-btn');
 
-const aiSuggestionsWrap = document.getElementById('ai-suggestions');
-const aiObjectSuggestions = document.getElementById('ai-object-suggestions');
-const aiMaterialSuggestions = document.getElementById('ai-material-suggestions');
-const aiColorSuggestion = document.getElementById('ai-color-suggestion');
-const aiStatus = document.getElementById('ai-status');
-
 let currentUser = null;
 let map = null;
 let itemsLayer = null;
@@ -88,6 +101,9 @@ let itemsSubscription = null;
 let expirationRefreshTimer = null;
 let aiInFlight = false;
 let aiLastResult = null;
+let selectedColorName = '';
+let selectedMaterialName = '';
+let colorPickerState = { hue: 35, saturation: 0.1, lightness: 0.92 };
 
 const DEFAULT_CENTER = [40.741, -73.989];
 const DEFAULT_ZOOM = 12;
@@ -203,6 +219,38 @@ const MATERIAL_LIST = [
 ];
 
 const CONDITION_LIST = ['Perfect','Great','Good','Scruffy','Salvage'];
+
+const COLOR_NAME_PRESETS = {
+  black: { hue: 0, saturation: 0, lightness: 0.08 },
+  white: { hue: 0, saturation: 0, lightness: 0.98 },
+  gray: { hue: 0, saturation: 0, lightness: 0.55 },
+  silver: { hue: 0, saturation: 0, lightness: 0.72 },
+  red: { hue: 0, saturation: 0.92, lightness: 0.55 },
+  orange: { hue: 28, saturation: 0.96, lightness: 0.56 },
+  yellow: { hue: 56, saturation: 0.98, lightness: 0.54 },
+  green: { hue: 122, saturation: 0.78, lightness: 0.42 },
+  blue: { hue: 215, saturation: 0.85, lightness: 0.52 },
+  purple: { hue: 276, saturation: 0.8, lightness: 0.56 },
+  pink: { hue: 328, saturation: 0.82, lightness: 0.68 },
+  brown: { hue: 28, saturation: 0.5, lightness: 0.36 },
+  tan: { hue: 33, saturation: 0.42, lightness: 0.68 },
+  beige: { hue: 42, saturation: 0.32, lightness: 0.83 },
+  cream: { hue: 50, saturation: 0.52, lightness: 0.9 },
+  clear: { hue: 0, saturation: 0, lightness: 0.97 },
+  wood: { hue: 32, saturation: 0.55, lightness: 0.46 },
+  metal: { hue: 210, saturation: 0.08, lightness: 0.66 },
+  chrome: { hue: 210, saturation: 0.05, lightness: 0.78 },
+  steel: { hue: 210, saturation: 0.11, lightness: 0.6 },
+  brass: { hue: 44, saturation: 0.74, lightness: 0.54 },
+  cane: { hue: 36, saturation: 0.4, lightness: 0.67 },
+  wicker: { hue: 34, saturation: 0.42, lightness: 0.62 },
+  rattan: { hue: 36, saturation: 0.35, lightness: 0.64 },
+  plastic: { hue: 0, saturation: 0, lightness: 0.95 },
+  glass: { hue: 205, saturation: 0.25, lightness: 0.9 },
+  leather: { hue: 22, saturation: 0.36, lightness: 0.31 },
+  fabric: { hue: 0, saturation: 0, lightness: 0.85 },
+  velvet: { hue: 310, saturation: 0.6, lightness: 0.42 }
+};
 
 function escapeHtml(str = '') {
   return String(str)
@@ -1096,27 +1144,32 @@ async function handleGone() {
   renderVisibleItems();
 }
 
+
 function clearAISuggestions() {
   aiLastResult = null;
-  if (aiSuggestionsWrap) aiSuggestionsWrap.hidden = true;
-  if (aiObjectSuggestions) aiObjectSuggestions.innerHTML = '';
-  if (aiMaterialSuggestions) aiMaterialSuggestions.innerHTML = '';
-  if (aiColorSuggestion) aiColorSuggestion.textContent = '';
-  if (aiStatus) aiStatus.textContent = '';
+  if (objectAiWrap) objectAiWrap.hidden = true;
+  if (objectAiSuggestions) objectAiSuggestions.innerHTML = '';
+  if (colorAiWrap) colorAiWrap.hidden = true;
+  if (colorAiApply) colorAiApply.textContent = '';
+  if (materialAiWrap) materialAiWrap.hidden = true;
+  if (materialAiSuggestions) materialAiSuggestions.innerHTML = '';
 }
 
-function setAIStatus(message = '') {
-  if (aiStatus) aiStatus.textContent = message;
-}
+function setAIStatus() {}
 
-function renderSuggestionButtons(container, values, onChoose) {
+function renderSuggestionButtons(container, values, onChoose, selectedValue = '') {
   if (!container) return;
 
-  container.innerHTML = (values || []).map((value) => `
-    <button class="ai-pill" type="button" data-ai-value="${escapeHtml(value)}">
-      ${escapeHtml(value)}
-    </button>
-  `).join('');
+  const selected = String(selectedValue || '').trim().toLowerCase();
+  container.innerHTML = (values || []).map((value) => {
+    const normalized = String(value || '').trim().toLowerCase();
+    const isSelected = normalized && normalized === selected;
+    return `
+      <button class="smart-chip${isSelected ? ' is-selected' : ''}" type="button" data-ai-value="${escapeHtml(value)}">
+        ${escapeHtml(value)}
+      </button>
+    `;
+  }).join('');
 
   container.querySelectorAll('[data-ai-value]').forEach((button) => {
     button.addEventListener('click', () => {
@@ -1143,60 +1196,244 @@ function normalizeAIResponse(data) {
   };
 }
 
-function refreshAIStageVisibility() {
-  if (!aiSuggestionsWrap || !aiLastResult) return;
+function parseColorMaterial(value = '') {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return { color: '', material: '' };
 
-  const hasObject = Boolean(titleInput.value.trim());
+  const material = MATERIAL_LIST.find((item) => raw.split(/\s+/).includes(item)) || '';
+  let color = raw;
 
-  const colorGroup = aiColorSuggestion?.closest('.ai-group');
-  const materialGroup = aiMaterialSuggestions?.closest('.ai-group');
-
-  if (!hasObject) {
-    colorGroup?.setAttribute('hidden', 'hidden');
-    materialGroup?.setAttribute('hidden', 'hidden');
-  } else {
-    colorGroup?.removeAttribute('hidden');
-    materialGroup?.removeAttribute('hidden');
+  if (material) {
+    color = raw.replace(material, '').replace(/\s+/g, ' ').trim();
   }
+
+  if (color && !COLOR_LIST.includes(color)) {
+    color = '';
+  }
+
+  return { color, material };
+}
+
+function combineColorMaterial(colorName = '', materialName = '') {
+  const parts = [String(colorName || '').trim(), String(materialName || '').trim()].filter(Boolean);
+  return [...new Set(parts)].join(' ');
+}
+
+function hslToCss(h, s, l) {
+  return `hsl(${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%)`;
+}
+
+function setColorPickerFromName(name = '') {
+  const preset = COLOR_NAME_PRESETS[String(name || '').toLowerCase()] || COLOR_NAME_PRESETS.cream;
+  colorPickerState = { ...preset };
+}
+
+function nearestColorNameFromState() {
+  const { hue, saturation, lightness } = colorPickerState;
+
+  if (lightness >= 0.95) return 'white';
+  if (lightness <= 0.12 && saturation <= 0.22) return 'black';
+  if (saturation <= 0.08) {
+    if (lightness < 0.38) return 'gray';
+    if (lightness < 0.68) return 'silver';
+    return 'white';
+  }
+
+  if (lightness > 0.88 && hue >= 38 && hue <= 62) return 'cream';
+  if (lightness > 0.8 && hue >= 30 && hue <= 58) return 'beige';
+  if (lightness > 0.62 && hue >= 24 && hue <= 42) return 'tan';
+  if (hue < 12 || hue >= 345) return 'red';
+  if (hue < 42) return lightness < 0.45 ? 'brown' : 'orange';
+  if (hue < 72) return 'yellow';
+  if (hue < 165) return 'green';
+  if (hue < 255) return 'blue';
+  if (hue < 310) return 'purple';
+  return 'pink';
+}
+
+function updateColorWheelUI() {
+  if (!colorWheel || !colorWheelKnob) return;
+
+  const radius = colorWheel.clientWidth / 2;
+  const angle = (colorPickerState.hue - 90) * (Math.PI / 180);
+  const distance = radius * Math.max(0.08, Math.min(0.98, colorPickerState.saturation));
+  const x = radius + Math.cos(angle) * distance;
+  const y = radius + Math.sin(angle) * distance;
+
+  colorWheelKnob.style.left = `${x}px`;
+  colorWheelKnob.style.top = `${y}px`;
+
+  if (colorLightness) {
+    colorLightness.value = String(Math.round(colorPickerState.lightness * 100));
+    colorLightness.style.setProperty('--track-color', hslToCss(colorPickerState.hue, colorPickerState.saturation, colorPickerState.lightness));
+  }
+
+  selectedColorName = nearestColorNameFromState();
+
+  if (colorPreviewSwatch) {
+    colorPreviewSwatch.style.background = hslToCss(colorPickerState.hue, colorPickerState.saturation, colorPickerState.lightness);
+  }
+}
+
+function setColorFromPointer(clientX, clientY) {
+  if (!colorWheel) return;
+  const rect = colorWheel.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const dx = clientX - cx;
+  const dy = clientY - cy;
+  const radius = rect.width / 2;
+  const distance = Math.min(radius, Math.sqrt(dx * dx + dy * dy));
+  const angle = Math.atan2(dy, dx);
+  const hue = ((angle * 180 / Math.PI) + 90 + 360) % 360;
+  const saturation = Math.min(1, Math.max(0.08, distance / radius));
+
+  colorPickerState.hue = hue;
+  colorPickerState.saturation = saturation;
+  updateColorWheelUI();
+}
+
+function renderObjectSheet() {
+  if (!objectSearchInput || !objectOptions) return;
+
+  const query = objectSearchInput.value.trim().toLowerCase();
+  const filtered = OBJECT_LIST.filter((item) => item.includes(query));
+  const current = titleInput.value.trim().toLowerCase();
+
+  if (objectAiWrap) {
+    const suggestions = aiLastResult?.objectSuggestions || [];
+    objectAiWrap.hidden = !suggestions.length;
+    renderSuggestionButtons(objectAiSuggestions, suggestions, (value) => {
+      titleInput.value = value;
+      syncAddUI();
+      objectSearchInput.value = value;
+      renderObjectSheet();
+      closeObjectSheet();
+    }, current);
+  }
+
+  const matchesExisting = OBJECT_LIST.includes(query);
+  let html = '';
+
+  if (query && !matchesExisting && isValidCustomTitle(query)) {
+    html += `<button class="smart-option smart-option--custom" type="button" data-object-value="${escapeHtml(query)}">${escapeHtml(query)}</button>`;
+  }
+
+  html += filtered.map((item) => {
+    const selectedClass = item === current ? ' is-selected' : '';
+    return `<button class="smart-option${selectedClass}" type="button" data-object-value="${escapeHtml(item)}">${escapeHtml(item)}</button>`;
+  }).join('');
+
+  if (!html) {
+    html = '<div class="smart-option smart-option--empty">No matches</div>';
+  }
+
+  objectOptions.innerHTML = html;
+}
+
+function openObjectSheet() {
+  if (!objectSheet || !objectSearchInput) return;
+  objectSheet.hidden = false;
+  objectSearchInput.value = titleInput.value || '';
+  renderObjectSheet();
+  setTimeout(() => objectSearchInput.focus(), 30);
+}
+
+function closeObjectSheet() {
+  if (objectSheet) objectSheet.hidden = true;
+}
+
+function renderMaterialOptions() {
+  if (!materialOptions || !materialSearchInput) return;
+
+  const query = materialSearchInput.value.trim().toLowerCase();
+  const filtered = MATERIAL_LIST.filter((item) => item.includes(query));
+
+  if (materialAiWrap) {
+    const suggestions = aiLastResult?.materialSuggestions || [];
+    materialAiWrap.hidden = !suggestions.length;
+    renderSuggestionButtons(materialAiSuggestions, suggestions, (value) => {
+      selectedMaterialName = value;
+      materialSearchInput.value = value;
+      renderMaterialOptions();
+    }, selectedMaterialName);
+  }
+
+  let html = filtered.map((item) => {
+    const selectedClass = item === selectedMaterialName ? ' is-selected' : '';
+    return `<button class="smart-option${selectedClass}" type="button" data-material-value="${escapeHtml(item)}">${escapeHtml(item)}</button>`;
+  }).join('');
+
+  if (query && !MATERIAL_LIST.includes(query)) {
+    html = `<button class="smart-option smart-option--custom" type="button" data-material-value="${escapeHtml(query)}">${escapeHtml(query)}</button>` + html;
+  }
+
+  if (!html) html = '<div class="smart-option smart-option--empty">No matches</div>';
+  materialOptions.innerHTML = html;
+}
+
+function renderColorSheet() {
+  if (colorAiWrap && colorAiApply) {
+    const colorSuggestion = aiLastResult?.colorSuggestion || '';
+    colorAiWrap.hidden = !colorSuggestion;
+    colorAiApply.textContent = colorSuggestion;
+    colorAiApply.classList.toggle('is-selected', colorSuggestion && colorSuggestion === selectedColorName);
+  }
+
+  updateColorWheelUI();
+  renderMaterialOptions();
+}
+
+function openColorSheet() {
+  if (!colorSheet) return;
+  colorSheet.hidden = false;
+
+  const parsed = parseColorMaterial(colorInput.value);
+  selectedColorName = parsed.color || aiLastResult?.colorSuggestion || 'cream';
+  selectedMaterialName = parsed.material || '';
+  setColorPickerFromName(selectedColorName);
+  if (materialSearchInput) materialSearchInput.value = selectedMaterialName;
+  renderColorSheet();
+}
+
+function closeColorSheet() {
+  if (colorSheet) colorSheet.hidden = true;
+}
+
+function commitColorSheet() {
+  colorInput.value = combineColorMaterial(selectedColorName, selectedMaterialName);
+  syncAddUI();
+  closeColorSheet();
+}
+
+function refreshAIStageVisibility() {
+  renderObjectSheet();
+  renderColorSheet();
 }
 
 function applyAISuggestions(ai) {
   const normalized = normalizeAIResponse(ai);
   aiLastResult = normalized;
 
-  if (aiSuggestionsWrap) {
-    aiSuggestionsWrap.hidden = false;
-  }
-
   if (!titleInput.value.trim() && normalized.objectSuggestions.length) {
     titleInput.value = normalized.objectSuggestions[0];
   }
 
-  if (!colorInput.value.trim()) {
-    if (normalized.colorSuggestion) {
-      colorInput.value = normalized.colorSuggestion;
-    } else if (normalized.materialSuggestions.length) {
-      colorInput.value = normalized.materialSuggestions[0];
-    }
+  const parsed = parseColorMaterial(colorInput.value);
+  if (!parsed.color && normalized.colorSuggestion) {
+    selectedColorName = normalized.colorSuggestion;
+  } else if (parsed.color) {
+    selectedColorName = parsed.color;
   }
 
+  if (!parsed.material && normalized.materialSuggestions.length) {
+    selectedMaterialName = normalized.materialSuggestions[0];
+  } else if (parsed.material) {
+    selectedMaterialName = parsed.material;
+  }
+
+  colorInput.value = combineColorMaterial(selectedColorName, selectedMaterialName);
   syncAddUI();
-
-  if (aiColorSuggestion) {
-    aiColorSuggestion.textContent = normalized.colorSuggestion || '';
-  }
-
-  renderSuggestionButtons(aiObjectSuggestions, normalized.objectSuggestions, (value) => {
-    titleInput.value = value;
-    syncAddUI();
-    refreshAIStageVisibility();
-  });
-
-  renderSuggestionButtons(aiMaterialSuggestions, normalized.materialSuggestions, (value) => {
-    colorInput.value = value;
-    syncAddUI();
-  });
-
   refreshAIStageVisibility();
 }
 
@@ -1258,18 +1495,12 @@ async function runAIForPhoto(file) {
   aiInFlight = true;
   clearAISuggestions();
 
-  if (aiSuggestionsWrap) aiSuggestionsWrap.hidden = false;
-  setAIStatus('Thinking…');
-
   try {
     const resizedBlob = await resizeImage(file, 1200, 0.82);
     const ai = await getAISuggestionsFromBlob(resizedBlob);
     applyAISuggestions(ai);
-    setAIStatus('');
   } catch (error) {
     console.error('AI tagging failed:', error);
-    if (aiSuggestionsWrap) aiSuggestionsWrap.hidden = false;
-    setAIStatus('AI suggestions unavailable.');
   } finally {
     aiInFlight = false;
   }
@@ -1313,29 +1544,9 @@ function attachEvents() {
   retakePhotoBtn.addEventListener('click', promptCameraCapture);
   photoInput.addEventListener('change', handlePhotoChange);
 
-  pickTitleBtn.addEventListener('click', () => {
-    openPicker({
-      key: 'title',
-      input: titleInput,
-      options: OBJECT_LIST,
-      searchable: true,
-      requireQuery: true,
-      allowCustom: true,
-      maxLength: MAX_CUSTOM_TITLE_LENGTH,
-      placeholder: 'Object',
-      initialQuery: titleInput.value
-    });
-  });
+  pickTitleBtn.addEventListener('click', openObjectSheet);
 
-  pickColorBtn.addEventListener('click', () => {
-    openPicker({
-      key: 'color',
-      input: colorInput,
-      options: COLOR_LIST,
-      searchable: true,
-      placeholder: 'wood'
-    });
-  });
+  pickColorBtn.addEventListener('click', openColorSheet);
 
   pickConditionBtn.addEventListener('click', () => {
     openPicker({
@@ -1366,6 +1577,71 @@ function attachEvents() {
 
   pickerSheet.addEventListener('click', (event) => {
     if (event.target === pickerSheet) closePicker();
+  });
+
+  objectSearchInput?.addEventListener('input', renderObjectSheet);
+  objectOptions?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-object-value]');
+    if (!button) return;
+    titleInput.value = button.dataset.objectValue || '';
+    syncAddUI();
+    closeObjectSheet();
+  });
+
+  materialSearchInput?.addEventListener('input', renderMaterialOptions);
+  materialOptions?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-material-value]');
+    if (!button) return;
+    selectedMaterialName = button.dataset.materialValue || '';
+    materialSearchInput.value = selectedMaterialName;
+    renderMaterialOptions();
+  });
+
+  colorAiApply?.addEventListener('click', () => {
+    selectedColorName = aiLastResult?.colorSuggestion || selectedColorName;
+    setColorPickerFromName(selectedColorName);
+    renderColorSheet();
+  });
+
+  colorSheetDoneBtn?.addEventListener('click', commitColorSheet);
+
+  colorLightness?.addEventListener('input', (event) => {
+    colorPickerState.lightness = Number(event.target.value) / 100;
+    updateColorWheelUI();
+  });
+
+  if (colorWheel) {
+    let draggingColor = false;
+
+    const handleMove = (clientX, clientY) => {
+      if (!draggingColor) return;
+      setColorFromPointer(clientX, clientY);
+    };
+
+    colorWheel.addEventListener('pointerdown', (event) => {
+      draggingColor = true;
+      colorWheel.setPointerCapture?.(event.pointerId);
+      setColorFromPointer(event.clientX, event.clientY);
+    });
+
+    colorWheel.addEventListener('pointermove', (event) => {
+      handleMove(event.clientX, event.clientY);
+    });
+
+    const stopDragging = () => {
+      draggingColor = false;
+    };
+
+    colorWheel.addEventListener('pointerup', stopDragging);
+    colorWheel.addEventListener('pointercancel', stopDragging);
+  }
+
+  objectSheet?.addEventListener('click', (event) => {
+    if (event.target === objectSheet) closeObjectSheet();
+  });
+
+  colorSheet?.addEventListener('click', (event) => {
+    if (event.target === colorSheet) closeColorSheet();
   });
 
   titleInput.addEventListener('input', () => {
@@ -1408,6 +1684,14 @@ function attachEvents() {
   });
 
   document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && objectSheet && !objectSheet.hidden) {
+      closeObjectSheet();
+      return;
+    }
+    if (event.key === 'Escape' && colorSheet && !colorSheet.hidden) {
+      closeColorSheet();
+      return;
+    }
     if (event.key === 'Escape' && !pickerSheet.hidden) {
       closePicker();
       return;
