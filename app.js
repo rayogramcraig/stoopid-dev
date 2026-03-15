@@ -1,5 +1,8 @@
 const sb = window.supabaseClient;
 
+const GEMINI_ENDPOINT =
+  "https://juryvtbmjyaxitdvtzwc.supabase.co/functions/v1/gemini-tag-image-dev";
+
 const userPill = document.getElementById('user-pill');
 const installSplash = document.getElementById('install-splash');
 const installContinueBtn = document.getElementById('install-continue-btn');
@@ -62,6 +65,16 @@ const detailHeroState = document.getElementById('detail-hero-state');
 const detailHeroStateText = document.getElementById('detail-hero-state-text');
 const detailHeroStillBtn = document.getElementById('detail-hero-still-btn');
 
+/*
+  Optional AI suggestion UI hooks.
+  These can exist in your HTML, but the app will still work if they do not.
+*/
+const aiSuggestionsWrap = document.getElementById('ai-suggestions');
+const aiObjectSuggestions = document.getElementById('ai-object-suggestions');
+const aiMaterialSuggestions = document.getElementById('ai-material-suggestions');
+const aiColorSuggestion = document.getElementById('ai-color-suggestion');
+const aiStatus = document.getElementById('ai-status');
+
 let currentUser = null;
 let map = null;
 let itemsLayer = null;
@@ -77,6 +90,7 @@ let activeDetailItem = null;
 let verifiedItemIds = new Set();
 let itemsSubscription = null;
 let expirationRefreshTimer = null;
+let aiInFlight = false;
 
 const DEFAULT_CENTER = [40.741, -73.989];
 const DEFAULT_ZOOM = 12;
@@ -85,91 +99,112 @@ const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 const MAX_CUSTOM_TITLE_LENGTH = 20;
 
 const OBJECT_LIST = [
-'air conditioner',
-'armchair',
-'bench',
-'bike',
-'bookcase',
-'cabinet',
-'chair',
-'chaise lounge',
-'coffee table',
-'console table',
-'couch',
-'crate',
-'desk',
-'desk chair',
-'dining chair',
-'dining table',
-'dog crate',
-'dresser',
-'end table',
-'fan',
-'filing cabinet',
-'folding chair',
-'futon',
-'headboard',
-'heater',
-'hutch',
-'lamp',
-'lawn chair',
-'lounge chair',
-'loveseat',
-'mattress',
-'media console',
-'mirror',
-'monitor',
-'nightstand',
-'office chair',
-'ottoman',
-'patio chair',
-'patio table',
-'piano',
-'plant',
-'planter',
-'printer',
-'rack',
-'recliner',
-'rocking chair',
-'rug',
-'shelf',
-'shoe rack',
-'side table',
-'sink',
-'sofa',
-'speaker',
-'stool',
-'storage bin',
-'storage cabinet',
-'storage shelf',
-'stroller',
-'suitcase',
-'swivel chair',
-'table',
-'table lamp',
-'toolbox',
-'tv',
-'tv stand',
-'vanity',
-'wardrobe',
-'washing machine',
-'wheelchair',
-'window',
-'wine rack',
-'workbench',
-'bed frame',
-'bed',
-'bunk bed',
-'daybed',
-'crib',
-'toilet',
-'bathtub',
-'microwave',
-'mini fridge'
+  'air conditioner',
+  'armchair',
+  'bench',
+  'bike',
+  'bookcase',
+  'cabinet',
+  'chair',
+  'chaise lounge',
+  'coffee table',
+  'console table',
+  'couch',
+  'crate',
+  'desk',
+  'desk chair',
+  'dining chair',
+  'dining table',
+  'dog crate',
+  'dresser',
+  'end table',
+  'fan',
+  'filing cabinet',
+  'folding chair',
+  'futon',
+  'headboard',
+  'heater',
+  'hutch',
+  'lamp',
+  'lawn chair',
+  'lounge chair',
+  'loveseat',
+  'mattress',
+  'media console',
+  'mirror',
+  'monitor',
+  'nightstand',
+  'office chair',
+  'ottoman',
+  'patio chair',
+  'patio table',
+  'piano',
+  'plant',
+  'planter',
+  'printer',
+  'rack',
+  'recliner',
+  'rocking chair',
+  'rug',
+  'shelf',
+  'shoe rack',
+  'side table',
+  'sink',
+  'sofa',
+  'speaker',
+  'stool',
+  'storage bin',
+  'storage cabinet',
+  'storage shelf',
+  'stroller',
+  'suitcase',
+  'swivel chair',
+  'table',
+  'table lamp',
+  'toolbox',
+  'tv',
+  'tv stand',
+  'vanity',
+  'wardrobe',
+  'washing machine',
+  'wheelchair',
+  'window',
+  'wine rack',
+  'workbench',
+  'bed frame',
+  'bed',
+  'bunk bed',
+  'daybed',
+  'crib',
+  'toilet',
+  'bathtub',
+  'microwave',
+  'mini fridge'
 ];
+
 const COLOR_LIST = [
-  'black','white','gray','silver','red','orange','yellow','green','blue','purple','pink','brown','tan','beige','cream','clear','wood','metal','chrome','steel','brass','cane','wicker','rattan','plastic','glass','leather','fabric','velvet'
+  'black','white','gray','silver','red','orange','yellow','green','blue',
+  'purple','pink','brown','tan','beige','cream','clear','wood','metal',
+  'chrome','steel','brass','cane','wicker','rattan','plastic','glass',
+  'leather','fabric','velvet'
 ];
+
+const MATERIAL_LIST = [
+  'wood',
+  'metal',
+  'plastic',
+  'glass',
+  'fabric',
+  'leather',
+  'paper',
+  'cardboard',
+  'ceramic',
+  'stone',
+  'wicker',
+  'rattan',
+  'rubber'
+];
+
 const CONDITION_LIST = ['Perfect','Great','Good','Scruffy','Salvage'];
 
 function escapeHtml(str = '') {
@@ -849,6 +884,7 @@ function promptCameraCapture() {
 function openAddModal() {
   addModal.hidden = false;
   syncAddUI();
+  clearAISuggestions();
   setTimeout(() => map.invalidateSize(), 40);
   useCurrentLocation({ silent: true });
   promptCameraCapture();
@@ -865,6 +901,7 @@ function resetAddForm() {
   latInput.value = '';
   lngInput.value = '';
   resetPhotoPreview();
+  clearAISuggestions();
   syncAddUI();
   if (draftMarker) {
     map.removeLayer(draftMarker);
@@ -1063,6 +1100,169 @@ async function handleGone() {
   renderVisibleItems();
 }
 
+function clearAISuggestions() {
+  if (aiSuggestionsWrap) aiSuggestionsWrap.hidden = true;
+  if (aiObjectSuggestions) aiObjectSuggestions.innerHTML = '';
+  if (aiMaterialSuggestions) aiMaterialSuggestions.innerHTML = '';
+  if (aiColorSuggestion) aiColorSuggestion.textContent = '';
+  if (aiStatus) aiStatus.textContent = '';
+}
+
+function setAIStatus(message = '') {
+  if (aiStatus) aiStatus.textContent = message;
+}
+
+function renderSuggestionButtons(container, values, onChoose) {
+  if (!container) return;
+
+  container.innerHTML = (values || []).map((value) => `
+    <button class="picker-option ai-suggestion-pill" type="button" data-ai-value="${escapeHtml(value)}">
+      ${escapeHtml(value)}
+    </button>
+  `).join('');
+
+  container.querySelectorAll('[data-ai-value]').forEach((button) => {
+    button.addEventListener('click', () => {
+      onChoose(button.dataset.aiValue || '');
+    });
+  });
+}
+
+function normalizeAIResponse(data) {
+  const objectSuggestions = Array.isArray(data?.objectSuggestions)
+    ? data.objectSuggestions.map((v) => String(v || '').trim().toLowerCase()).filter(Boolean)
+    : [];
+
+  const materialSuggestions = Array.isArray(data?.materialSuggestions)
+    ? data.materialSuggestions.map((v) => String(v || '').trim().toLowerCase()).filter(Boolean)
+    : [];
+
+  const colorSuggestion = String(data?.colorSuggestion || '').trim().toLowerCase();
+
+  return {
+    objectSuggestions: [...new Set(objectSuggestions)].slice(0, 3),
+    materialSuggestions: [...new Set(materialSuggestions)].slice(0, 3),
+    colorSuggestion
+  };
+}
+
+function applyAISuggestions(ai) {
+  const normalized = normalizeAIResponse(ai);
+
+  if (!titleInput.value.trim() && normalized.objectSuggestions[0]) {
+    titleInput.value = normalized.objectSuggestions[0];
+  }
+
+  if (!colorInput.value.trim() && normalized.colorSuggestion) {
+    colorInput.value = normalized.colorSuggestion;
+  }
+
+  syncAddUI();
+
+  if (aiSuggestionsWrap) {
+    aiSuggestionsWrap.hidden = false;
+  }
+
+  if (aiColorSuggestion) {
+    aiColorSuggestion.textContent = normalized.colorSuggestion || '';
+  }
+
+  renderSuggestionButtons(aiObjectSuggestions, normalized.objectSuggestions, (value) => {
+    titleInput.value = value;
+    syncAddUI();
+  });
+
+  renderSuggestionButtons(aiMaterialSuggestions, normalized.materialSuggestions, (value) => {
+    colorInput.value = value;
+    syncAddUI();
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const base64 = result.split(',')[1];
+      if (!base64) {
+        reject(new Error('Could not convert image to base64.'));
+        return;
+      }
+      resolve(base64);
+    };
+
+    reader.onerror = () => {
+      reject(reader.error || new Error('Could not read image.'));
+    };
+
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function getAISuggestionsFromBlob(blob) {
+  const imageBase64 = await blobToBase64(blob);
+
+  const res = await fetch(GEMINI_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      imageBase64,
+      mimeType: 'image/jpeg',
+      objectOptions: OBJECT_LIST,
+      materialOptions: MATERIAL_LIST
+    })
+  });
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch (error) {
+    throw new Error('AI response was not valid JSON.');
+  }
+
+  if (!res.ok) {
+    throw new Error(data?.error || 'AI tagging failed.');
+  }
+
+  return data;
+}
+
+async function runAIForPhoto(file) {
+  if (!file || aiInFlight) return;
+
+  aiInFlight = true;
+  clearAISuggestions();
+  setAIStatus('Thinking…');
+
+  try {
+    const resizedBlob = await resizeImage(file, 1200, 0.82);
+    const ai = await getAISuggestionsFromBlob(resizedBlob);
+    applyAISuggestions(ai);
+    setAIStatus('');
+  } catch (error) {
+    console.error('AI tagging failed:', error);
+    setAIStatus('AI suggestions unavailable.');
+  } finally {
+    aiInFlight = false;
+  }
+}
+
+async function handlePhotoChange() {
+  handlePhotoPreview();
+
+  const file = photoInput.files?.[0];
+  if (!file) {
+    clearAISuggestions();
+    syncAddUI();
+    return;
+  }
+
+  await runAIForPhoto(file);
+}
+
 function attachEvents() {
   if (splashGoBtn) {
     splashGoBtn.addEventListener('click', dismissSplashScreen);
@@ -1086,7 +1286,7 @@ function attachEvents() {
   submitAddBtn.addEventListener('click', handleSubmit);
 
   retakePhotoBtn.addEventListener('click', promptCameraCapture);
-  photoInput.addEventListener('change', handlePhotoPreview);
+  photoInput.addEventListener('change', handlePhotoChange);
 
   pickTitleBtn.addEventListener('click', () => {
     openPicker({
