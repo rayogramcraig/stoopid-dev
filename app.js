@@ -65,10 +65,6 @@ const detailHeroState = document.getElementById('detail-hero-state');
 const detailHeroStateText = document.getElementById('detail-hero-state-text');
 const detailHeroStillBtn = document.getElementById('detail-hero-still-btn');
 
-/*
-  Optional AI suggestion UI hooks.
-  These can exist in your HTML, but the app will still work if they do not.
-*/
 const aiSuggestionsWrap = document.getElementById('ai-suggestions');
 const aiObjectSuggestions = document.getElementById('ai-object-suggestions');
 const aiMaterialSuggestions = document.getElementById('ai-material-suggestions');
@@ -91,6 +87,7 @@ let verifiedItemIds = new Set();
 let itemsSubscription = null;
 let expirationRefreshTimer = null;
 let aiInFlight = false;
+let aiLastResult = null;
 
 const DEFAULT_CENTER = [40.741, -73.989];
 const DEFAULT_ZOOM = 12;
@@ -227,10 +224,9 @@ function isValidCustomTitle(value = '') {
 
 function getTitleValidationMessage(value = '') {
   const normalized = normalizeCustomTitle(value);
-
   if (!normalized) return 'Type an object name.';
   if (normalized.length > MAX_CUSTOM_TITLE_LENGTH) {
-    return `Keep object names under 21 characters.`;
+    return 'Keep object names under 21 characters.';
   }
   return '';
 }
@@ -1101,6 +1097,7 @@ async function handleGone() {
 }
 
 function clearAISuggestions() {
+  aiLastResult = null;
   if (aiSuggestionsWrap) aiSuggestionsWrap.hidden = true;
   if (aiObjectSuggestions) aiObjectSuggestions.innerHTML = '';
   if (aiMaterialSuggestions) aiMaterialSuggestions.innerHTML = '';
@@ -1116,7 +1113,7 @@ function renderSuggestionButtons(container, values, onChoose) {
   if (!container) return;
 
   container.innerHTML = (values || []).map((value) => `
-    <button class="picker-option ai-suggestion-pill" type="button" data-ai-value="${escapeHtml(value)}">
+    <button class="ai-pill" type="button" data-ai-value="${escapeHtml(value)}">
       ${escapeHtml(value)}
     </button>
   `).join('');
@@ -1148,16 +1145,7 @@ function normalizeAIResponse(data) {
 
 function applyAISuggestions(ai) {
   const normalized = normalizeAIResponse(ai);
-
-  if (!titleInput.value.trim() && normalized.objectSuggestions[0]) {
-    titleInput.value = normalized.objectSuggestions[0];
-  }
-
-  if (!colorInput.value.trim() && normalized.colorSuggestion) {
-    colorInput.value = normalized.colorSuggestion;
-  }
-
-  syncAddUI();
+  aiLastResult = normalized;
 
   if (aiSuggestionsWrap) {
     aiSuggestionsWrap.hidden = false;
@@ -1170,12 +1158,57 @@ function applyAISuggestions(ai) {
   renderSuggestionButtons(aiObjectSuggestions, normalized.objectSuggestions, (value) => {
     titleInput.value = value;
     syncAddUI();
+
+    if (normalized.colorSuggestion && !colorInput.value.trim()) {
+      colorInput.value = normalized.colorSuggestion;
+      syncAddUI();
+    }
+
+    if (aiMaterialSuggestions) {
+      aiMaterialSuggestions.closest('.ai-group')?.removeAttribute('hidden');
+    }
+    if (aiColorSuggestion) {
+      aiColorSuggestion.closest('.ai-group')?.removeAttribute('hidden');
+    }
   });
 
   renderSuggestionButtons(aiMaterialSuggestions, normalized.materialSuggestions, (value) => {
     colorInput.value = value;
     syncAddUI();
   });
+
+  if (!titleInput.value.trim()) {
+    if (aiMaterialSuggestions) {
+      aiMaterialSuggestions.closest('.ai-group')?.setAttribute('hidden', 'hidden');
+    }
+    if (aiColorSuggestion) {
+      aiColorSuggestion.closest('.ai-group')?.setAttribute('hidden', 'hidden');
+    }
+  } else {
+    if (aiMaterialSuggestions) {
+      aiMaterialSuggestions.closest('.ai-group')?.removeAttribute('hidden');
+    }
+    if (aiColorSuggestion) {
+      aiColorSuggestion.closest('.ai-group')?.removeAttribute('hidden');
+    }
+  }
+}
+
+function refreshAIStageVisibility() {
+  if (!aiSuggestionsWrap || !aiLastResult) return;
+
+  const hasObject = Boolean(titleInput.value.trim());
+
+  const colorGroup = aiColorSuggestion?.closest('.ai-group');
+  const materialGroup = aiMaterialSuggestions?.closest('.ai-group');
+
+  if (!hasObject) {
+    colorGroup?.setAttribute('hidden', 'hidden');
+    materialGroup?.setAttribute('hidden', 'hidden');
+  } else {
+    colorGroup?.removeAttribute('hidden');
+    materialGroup?.removeAttribute('hidden');
+  }
 }
 
 function blobToBase64(blob) {
@@ -1235,6 +1268,7 @@ async function runAIForPhoto(file) {
 
   aiInFlight = true;
   clearAISuggestions();
+  if (aiSuggestionsWrap) aiSuggestionsWrap.hidden = false;
   setAIStatus('Thinking…');
 
   try {
@@ -1244,6 +1278,7 @@ async function runAIForPhoto(file) {
     setAIStatus('');
   } catch (error) {
     console.error('AI tagging failed:', error);
+    if (aiSuggestionsWrap) aiSuggestionsWrap.hidden = false;
     setAIStatus('AI suggestions unavailable.');
   } finally {
     aiInFlight = false;
@@ -1303,11 +1338,23 @@ function attachEvents() {
   });
 
   pickColorBtn.addEventListener('click', () => {
-    openPicker({ key: 'color', input: colorInput, options: COLOR_LIST, searchable: true, placeholder: 'wood' });
+    openPicker({
+      key: 'color',
+      input: colorInput,
+      options: COLOR_LIST,
+      searchable: true,
+      placeholder: 'wood'
+    });
   });
 
   pickConditionBtn.addEventListener('click', () => {
-    openPicker({ key: 'condition', input: conditionInput, options: CONDITION_LIST, searchable: false, placeholder: '' });
+    openPicker({
+      key: 'condition',
+      input: conditionInput,
+      options: CONDITION_LIST,
+      searchable: false,
+      placeholder: ''
+    });
   });
 
   pickerSearchInput.addEventListener('input', () => {
@@ -1331,7 +1378,11 @@ function attachEvents() {
     if (event.target === pickerSheet) closePicker();
   });
 
-  titleInput.addEventListener('input', syncAddUI);
+  titleInput.addEventListener('input', () => {
+    syncAddUI();
+    refreshAIStageVisibility();
+  });
+
   colorInput.addEventListener('input', syncAddUI);
   conditionInput.addEventListener('input', syncAddUI);
 
