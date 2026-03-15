@@ -1310,3 +1310,68 @@ button {
     margin-bottom: 6vh;
   }
 }
+.ai-suggestions {
+  margin-top: 14px;
+  padding: 14px 14px 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.ai-suggestions__header {
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  opacity: 0.65;
+}
+
+.ai-status {
+  font-size: 13px;
+  margin-bottom: 8px;
+  min-height: 18px;
+  opacity: 0.7;
+}
+
+.ai-group + .ai-group {
+  margin-top: 10px;
+}
+
+.ai-group__label {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  opacity: 0.65;
+  text-transform: lowercase;
+}
+
+.ai-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-suggestion-pill {
+  appearance: none;
+  border: 1px solid #111;
+  background: #fff;
+  color: #111;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ai-suggestion-pill:active {
+  transform: translateY(1px);
+}
+
+.ai-color-line {
+  min-height: 20px;
+  font-size: 15px;
+  line-height: 1.3;
+}
