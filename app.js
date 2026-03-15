@@ -1143,57 +1143,6 @@ function normalizeAIResponse(data) {
   };
 }
 
-function applyAISuggestions(ai) {
-  const normalized = normalizeAIResponse(ai);
-  aiLastResult = normalized;
-
-  if (aiSuggestionsWrap) {
-    aiSuggestionsWrap.hidden = false;
-  }
-
-  if (aiColorSuggestion) {
-    aiColorSuggestion.textContent = normalized.colorSuggestion || '';
-  }
-
-  renderSuggestionButtons(aiObjectSuggestions, normalized.objectSuggestions, (value) => {
-    titleInput.value = value;
-    syncAddUI();
-
-    if (normalized.colorSuggestion && !colorInput.value.trim()) {
-      colorInput.value = normalized.colorSuggestion;
-      syncAddUI();
-    }
-
-    if (aiMaterialSuggestions) {
-      aiMaterialSuggestions.closest('.ai-group')?.removeAttribute('hidden');
-    }
-    if (aiColorSuggestion) {
-      aiColorSuggestion.closest('.ai-group')?.removeAttribute('hidden');
-    }
-  });
-
-  renderSuggestionButtons(aiMaterialSuggestions, normalized.materialSuggestions, (value) => {
-    colorInput.value = value;
-    syncAddUI();
-  });
-
-  if (!titleInput.value.trim()) {
-    if (aiMaterialSuggestions) {
-      aiMaterialSuggestions.closest('.ai-group')?.setAttribute('hidden', 'hidden');
-    }
-    if (aiColorSuggestion) {
-      aiColorSuggestion.closest('.ai-group')?.setAttribute('hidden', 'hidden');
-    }
-  } else {
-    if (aiMaterialSuggestions) {
-      aiMaterialSuggestions.closest('.ai-group')?.removeAttribute('hidden');
-    }
-    if (aiColorSuggestion) {
-      aiColorSuggestion.closest('.ai-group')?.removeAttribute('hidden');
-    }
-  }
-}
-
 function refreshAIStageVisibility() {
   if (!aiSuggestionsWrap || !aiLastResult) return;
 
@@ -1209,6 +1158,46 @@ function refreshAIStageVisibility() {
     colorGroup?.removeAttribute('hidden');
     materialGroup?.removeAttribute('hidden');
   }
+}
+
+function applyAISuggestions(ai) {
+  const normalized = normalizeAIResponse(ai);
+  aiLastResult = normalized;
+
+  if (aiSuggestionsWrap) {
+    aiSuggestionsWrap.hidden = false;
+  }
+
+  if (!titleInput.value.trim() && normalized.objectSuggestions.length) {
+    titleInput.value = normalized.objectSuggestions[0];
+  }
+
+  if (!colorInput.value.trim()) {
+    if (normalized.colorSuggestion) {
+      colorInput.value = normalized.colorSuggestion;
+    } else if (normalized.materialSuggestions.length) {
+      colorInput.value = normalized.materialSuggestions[0];
+    }
+  }
+
+  syncAddUI();
+
+  if (aiColorSuggestion) {
+    aiColorSuggestion.textContent = normalized.colorSuggestion || '';
+  }
+
+  renderSuggestionButtons(aiObjectSuggestions, normalized.objectSuggestions, (value) => {
+    titleInput.value = value;
+    syncAddUI();
+    refreshAIStageVisibility();
+  });
+
+  renderSuggestionButtons(aiMaterialSuggestions, normalized.materialSuggestions, (value) => {
+    colorInput.value = value;
+    syncAddUI();
+  });
+
+  refreshAIStageVisibility();
 }
 
 function blobToBase64(blob) {
@@ -1268,6 +1257,7 @@ async function runAIForPhoto(file) {
 
   aiInFlight = true;
   clearAISuggestions();
+
   if (aiSuggestionsWrap) aiSuggestionsWrap.hidden = false;
   setAIStatus('Thinking…');
 
