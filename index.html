@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>reThing</title>
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#ff1a00">
+
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Stoopid">
+
+<link rel="icon" href="/favicon.ico">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <section id="install-splash" class="install-splash" aria-label="Install app instructions" hidden>
+      <div class="install-splash__bg" aria-hidden="true"></div>
+      <div class="install-splash__content">
+        <div class="install-splash__lockup">
+          <h1 class="install-splash__brand" aria-label="Stoopid">
+            <span class="install-splash__brand-main">St</span><span class="install-splash__brand-accent">oo</span><span class="install-splash__brand-main">pid</span>
+          </h1>
+          <p class="install-splash__tagline">Good junk,<br>mapped.</p>
+        </div>
+
+        <div class="install-splash__instructions">
+          <p class="install-splash__body">
+            For the best experience,<br>
+            save this as an app:<br>
+            Tap <span class="install-splash__accent">↥ Share</span>, then choose<br>
+            <span class="install-splash__accent">“Add to Home Screen”</span>
+          </p>
+        </div>
+
+        <button id="install-continue-btn" class="install-splash__continue" type="button">
+          or just go ahead and click <u>here</u><br>if you’re going to be like that.
+        </button>
+      </div>
+    </section>
+
+    <section id="splash-screen" class="splash-screen" aria-label="Welcome screen">
+      <div class="splash-screen__bg" aria-hidden="true"></div>
+      <div class="splash-screen__content">
+        <div class="splash-screen__lockup">
+          <h1 class="splash-screen__brand" aria-label="Stoopid">
+            <span class="splash-screen__brand-main">St</span><span class="splash-screen__brand-accent">oo</span><span class="splash-screen__brand-main">pid</span>
+          </h1>
+          <p class="splash-screen__tagline">Good junk,<br>mapped.</p>
+        </div>
+
+        <button id="splash-go-btn" class="splash-screen__go" type="button" aria-label="Go to map">
+          GO
+        </button>
+      </div>
+    </section>
+
+    <div id="map" class="map-fullscreen"></div>
+
+    <header class="floating-topbar">
+      <div class="top-left-controls">
+        <button id="here-btn" class="here-btn" type="button" aria-label="Go to current location">near you</button>
+        <div class="brand-wrap">
+          <div class="brand">reThing</div>
+          <div class="subbrand">street finds worth saving</div>
+        </div>
+      </div>
+      <div class="user-pill" id="user-pill">Connecting…</div>
+    </header>
+
+    <div class="floating-controls">
+      <div class="search-row">
+        <input id="map-search" class="search-input" type="text" placeholder="search" autocomplete="off" />
+        <button id="open-add-btn" class="map-add-btn" type="button" aria-label="Add item">
+          <span>+</span>
+        </button>
+      </div>
+
+      <div class="filter-row">
+        <button id="filter-all-btn" class="filter-btn is-active" type="button">show all</button>
+        <button id="filter-new-btn" class="filter-btn" type="button">new</button>
+        <button id="filter-verified-btn" class="filter-btn filter-btn--green" type="button">verified</button>
+      </div>
+    </div>
+
+    <div id="add-modal" class="add-flow" hidden>
+      <div id="modal-backdrop" class="add-flow__backdrop"></div>
+
+      <section class="add-card" role="dialog" aria-modal="true" aria-labelledby="add-item-title">
+        <div class="add-photo-frame">
+          <img id="add-photo-image" class="add-photo-image" alt="Selected item" hidden />
+          <div class="add-photo-empty" id="add-photo-empty">
+            <div class="add-photo-empty__label">Opening camera…</div>
+          </div>
+          <div class="add-photo-shade"></div>
+
+          <button id="retake-photo-btn" class="retake-photo-btn" type="button" hidden>retake photo</button>
+
+          <div class="add-fields">
+            <h1 id="add-item-title" class="sr-only">Add item</h1>
+
+            <button id="pick-title-btn" class="add-line-btn" type="button">
+              <span id="pick-title-value" class="add-line-btn__text is-placeholder">What is it?</span>
+            </button>
+
+            <button id="pick-color-btn" class="add-line-btn" type="button">
+              <span id="pick-color-value" class="add-line-btn__text is-placeholder">Color</span>
+            </button>
+
+            <button id="pick-condition-btn" class="add-line-btn" type="button">
+              <span id="pick-condition-value" class="add-line-btn__text is-placeholder">Condition</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="add-status" id="form-status"></div>
+
+        <div class="add-bottom-bar">
+          <button id="close-add-btn" class="ghost-close-btn" type="button" aria-label="Close add item">×</button>
+          <button id="submit-add-btn" class="submit-add-btn is-disabled" type="button" aria-label="Post item" disabled>
+            <span>+</span>
+          </button>
+        </div>
+
+        <form id="item-form" class="sr-only" novalidate>
+          <input id="title" name="title" type="text" autocomplete="off" />
+          <input id="color" name="color" type="text" autocomplete="off" />
+          <input id="condition" name="condition" type="text" autocomplete="off" />
+          <input id="lat" name="lat" type="text" readonly />
+          <input id="lng" name="lng" type="text" readonly />
+          <input id="photo" name="photo" type="file" accept="image/*" capture="environment" />
+        </form>
+      </section>
+
+      <section id="picker-sheet" class="picker-sheet" hidden>
+        <div class="picker-sheet__panel">
+          <div id="picker-search-wrap" class="picker-sheet__search">
+            <input id="picker-search-input" class="picker-sheet__search-input" type="text" autocomplete="off" spellcheck="false" />
+          </div>
+          <div id="picker-options" class="picker-sheet__options"></div>
+        </div>
+      </section>
+    </div>
+
+    <div id="detail-modal" class="detail-modal" hidden>
+      <div id="detail-backdrop" class="detail-modal__backdrop"></div>
+
+      <section id="detail-card" class="detail-card" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+        <div class="detail-hero">
+          <img id="detail-image" class="detail-image" alt="" />
+          <div id="detail-image-placeholder" class="detail-image-placeholder">No photo</div>
+
+          <button id="detail-report-btn" class="detail-report-btn" type="button">
+            <span class="detail-report-btn__icon">⚠</span>
+            <span>report</span>
+          </button>
+
+          <button id="detail-close-btn" class="detail-close-btn" type="button" aria-label="Close detail">×</button>
+
+          <div id="detail-hero-state" class="detail-hero-state" hidden>
+            <div id="detail-hero-state-text" class="detail-hero-state-text">reported gone</div>
+            <button id="detail-hero-still-btn" class="detail-hero-still-btn" type="button">still there?</button>
+          </div>
+        </div>
+
+        <div class="detail-panel">
+          <div class="detail-line-block">
+            <div id="detail-title" class="detail-line-value">item</div>
+            <div class="detail-line-rule"></div>
+          </div>
+
+          <div class="detail-line-block">
+            <div id="detail-color" class="detail-line-value">Unknown</div>
+            <div class="detail-line-rule"></div>
+          </div>
+
+          <div class="detail-line-block">
+            <div id="detail-condition" class="detail-line-value">Unknown</div>
+            <div class="detail-line-rule"></div>
+          </div>
+
+          <div class="detail-actions">
+            <button id="detail-still-btn" class="detail-action-btn detail-action-btn--green detail-action-btn--outline-green" type="button">still there</button>
+            <div class="detail-count-bubble" id="detail-count">0</div>
+            <button id="detail-gone-btn" class="detail-action-btn detail-action-btn--outline-red" type="button">gone</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="./supabase-config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
