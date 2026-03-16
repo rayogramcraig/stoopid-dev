@@ -98,10 +98,24 @@
       <section class="add-card" role="dialog" aria-modal="true" aria-labelledby="add-item-title">
         <div class="add-photo-frame">
           <img id="add-photo-image" class="add-photo-image" alt="Selected item" hidden />
-          <div class="add-photo-empty" id="add-photo-empty">
-            <div class="add-photo-empty__label">Opening camera…</div>
-          </div>
-          <div class="add-photo-shade"></div>
+<div class="add-photo-empty" id="add-photo-empty">
+  <div class="add-photo-empty__label">Opening camera…</div>
+</div>
+<div class="add-photo-shade"></div>
+<div id="ai-thinking" class="ai-thinking" hidden>
+  <div class="ai-thinking__card">
+    <div class="ai-thinking__toprow">
+      <div class="ai-thinking__robot" aria-hidden="true">🤖</div>
+      <div class="ai-thinking__progress" aria-hidden="true">
+        <div class="ai-thinking__progress-track">
+          <div class="ai-thinking__progress-bar"></div>
+        </div>
+      </div>
+    </div>
+    <div class="ai-thinking__message">Our AI is checking<br>out your photo....</div>
+    <button id="ai-thinking-skip-btn" class="ai-thinking__skip" type="button">skip this</button>
+  </div>
+</div>
 
           <button id="retake-photo-btn" class="retake-photo-btn" type="button" hidden>retake photo</button>
 
@@ -114,6 +128,10 @@
 
             <button id="pick-color-btn" class="add-line-btn" type="button">
               <span id="pick-color-value" class="add-line-btn__text is-placeholder">Color</span>
+            </button>
+
+            <button id="pick-material-btn" class="add-line-btn" type="button">
+              <span id="pick-material-value" class="add-line-btn__text is-placeholder">Material</span>
             </button>
 
             <button id="pick-condition-btn" class="add-line-btn" type="button">
@@ -135,6 +153,7 @@
         <form id="item-form" class="sr-only" novalidate>
           <input id="title" name="title" type="text" autocomplete="off" />
           <input id="color" name="color" type="text" autocomplete="off" />
+          <input id="material" name="material" type="text" autocomplete="off" />
           <input id="condition" name="condition" type="text" autocomplete="off" />
           <input id="lat" name="lat" type="text" readonly />
           <input id="lng" name="lng" type="text" readonly />
@@ -175,8 +194,16 @@
             <input id="color-lightness" class="color-lightness" type="range" min="22" max="92" step="1" value="62" />
           </div>
 
-          <div class="smart-sheet__title smart-sheet__title--secondary">What material is it made of?</div>
-          <div class="smart-sheet__search-wrap smart-sheet__search-wrap--secondary">
+          <div class="smart-sheet__actions">
+            <button id="color-sheet-done-btn" class="smart-sheet__done-btn" type="button">done</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="material-sheet" class="smart-sheet smart-sheet--material" hidden>
+        <div class="smart-sheet__panel smart-sheet__panel--material">
+          <div class="smart-sheet__title">What material is it made of?</div>
+          <div class="smart-sheet__search-wrap">
             <input id="material-search-input" class="smart-sheet__search-input" type="text" autocomplete="off" spellcheck="false" placeholder="choose or type here" />
           </div>
 
@@ -188,7 +215,7 @@
           <div id="material-options" class="smart-sheet__options smart-sheet__options--materials"></div>
 
           <div class="smart-sheet__actions">
-            <button id="color-sheet-done-btn" class="smart-sheet__done-btn" type="button">done</button>
+            <button id="material-sheet-done-btn" class="smart-sheet__done-btn" type="button">done</button>
           </div>
         </div>
       </section>
